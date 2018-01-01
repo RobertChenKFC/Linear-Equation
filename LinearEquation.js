@@ -51,7 +51,10 @@ function numChanged() {
 }
 
 let matrix;
+let matArr;
+let prevMat;
 function calcMatrix() {
+    // Get matrix
     matrix = [];
     for(let i = 0; i < rows; i++) {
         matrix[i] = [];
@@ -61,28 +64,115 @@ function calcMatrix() {
         }
     }
 
+    // Do row operations
+    /*
+    matArr = [];
     for(let b = 0; b < rows; b++) {
         const base = matrix[b][b].copy();
 
         if(base.q !== 0) {
+            // Divide so that first element is 1
             for(let j = 0; j < cols; j++) matrix[b][j].div(base);
 
+            let cur = toLatex(matrix);
+            if(matArr.length === 0) matArr.push(toLatex(matrix));
+            else if(cur !== matArr[matArr.length - 1]) matArr.push('\\rightarrow' + toLatex(matrix));
+            if(matArr.length % 3 === 0) matArr[matArr.length - 1] += '\\\\';
+
+            // Add to other rows
             for(let i = 0; i < rows; i++) {
                 if(i !== b) {
                     const ratio = matrix[i][b].copy();
                     for(let j = 0; j < cols; j++) matrix[i][j].sub(Frac.mult(matrix[b][j], ratio));
                 }
             }
+
+            cur = toLatex(matrix);
+            if(matArr.length === 0) matArr.push(toLatex(matrix));
+            else if(cur !== matArr[matArr.length - 1]) matArr.push('\\rightarrow' + toLatex(matrix));
+            if(matArr.length % 3 === 0) matArr.push('\\\\');
        }
     }
+    //*/
 
+    matArr = [toLatex(matrix)];
+    prevMat = '';
+    for(let bi = 0; bi < rows; bi++) {
+        // Move to first non-zero row
+        let bj = bi;
+        while(matrix[bi][bj].q === 0 && bi < rows - 1) bi++;
+        const base = matrix[bi][bj].copy();
+
+        if(base.q !== 0) {
+            // Swap to match identity matrix
+            if(bi !== bj) {
+                const t = matrix[bi];
+                matrix[bi] = matrix[bj];
+                matrix[bj] = t;
+
+                let cur = toLatex(matrix);
+                if(cur !== prevMat) {
+                    prevMat = toLatex(matrix);
+                    matArr.push('\\xrightarrow{r_' + (bi + 1).toString() + ' \\leftrightarrow r_' +
+                        (bj + 1).toString() + '}' + cur);
+                }
+
+                bi = bj;
+            }
+
+            // Divide so that first element is 1
+            if(base.q !== base.p) {
+                for(let j = 0; j < cols; j++) matrix[bi][j].div(base);
+
+                let cur = toLatex(matrix);
+                if(cur !== prevMat) {
+                    prevMat = toLatex(matrix);
+                    matArr.push('\\xrightarrow{r_' + (bi + 1).toString() + ' \\div ' + 
+                        base.toBracLatex() + '}' + cur);
+                }
+            }
+
+
+            // Add to other rows
+            let rowOperations = [];
+            for(let i = 0; i < rows; i++) {
+                if(i !== bi) {
+                    const ratio = matrix[i][bj].copy();
+                    if(ratio.q !== 0) {
+                        for(let j = 0; j < cols; j++) matrix[i][j].sub(Frac.mult(matrix[bi][j], ratio));
+
+                        let s = 'r_' + (i + 1).toString() + ' - ';
+                        s += ratio.toCoeffLatex().toString() + 'r_' + (bi + 1).toString(); // strange bug
+                        rowOperations.push(s);
+                    }
+                }
+            }
+
+            let cur = toLatex(matrix);
+            if(cur !== prevMat) {
+                prevMat = toLatex(matrix);
+                matArr.push('\\xrightarrow{\\substack{' + rowOperations.join(' \\\\') + '}}' + cur);
+            }
+        }
+    }
+
+    for(let i = 0; i < matArr.length; i++) if(i % 3 === 2) matArr[i] += '\\\\';
+    MathJax.Hub.queue.Push(["Text", resultMatrix, matArr.join('')]);	
+    console.log(matArr.join());
+}
+
+function toId(i, j) {
+    return i.toString() + ' ' + j.toString();
+}
+
+function toLatex(m) {
     let latex = '\\left[\\begin{array}{';
     for(let i = 0; i < rows; i++) latex += 'c';
     latex += '|c}';
 
     for(let i = 0; i < rows; i++) {
         for(let j = 0; j < cols; j++) {
-            latex += matrix[i][j].toLatex();
+            latex += m[i][j].toLatex();
 
             if(j !== cols - 1) latex += '&';
         }
@@ -91,9 +181,5 @@ function calcMatrix() {
 
     latex += '\\end{array}\\right]';
 
-    MathJax.Hub.queue.Push(["Text", resultMatrix, latex]);	
-}
-
-function toId(i, j) {
-    return i.toString() + ' ' + j.toString();
+    return latex;
 }

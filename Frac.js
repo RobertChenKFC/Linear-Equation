@@ -152,6 +152,37 @@ class Frac {
 		return '\\frac{' + this.q.toString() + '}{' + this.p.toString() + '}';
 	}
 
+	toBracLatex() {
+		this.reduce();
+
+		if(this.q === 0) return '0';
+
+		if(this.p === 1) {
+			if(this.q > 0) return this.q.toString();
+			return '(' + this.q.toString() + ')';
+		}
+
+		if((this.q > 0 && this.p > 0) || (this.q < 0 && this.p < 0)) 
+			return '\\frac{' + this.q.toString() + '}{' + this.p.toString() + '}';
+		return '(\\frac{' + this.q.toString() + '}{' + this.p.toString() + '})';
+	}
+
+	
+	toCoeffLatex() {
+		this.reduce();
+		if(this.q === 1) return '';
+		if(this.q === 0) return '0';
+
+		if(this.p === 1) {
+			if(this.q > 0) return this.q.toString();
+			return '(' + this.q.toString() + ')';
+		}
+	
+		if((this.q > 0 && this.p > 0) || (this.q < 0 && this.p < 0)) 
+			return '\\frac{' + this.q.toString() + '}{' + this.p.toString() + '}';
+		return '(\\frac{' + this.q.toString() + '}{' + this.p.toString() + '})';
+	}
+
 	getApprox() {
 		return this.q / this.p;	
 	}
